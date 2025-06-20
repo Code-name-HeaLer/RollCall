@@ -544,3 +544,70 @@ export async function getAttendanceDetailsForDate(
   `, [date, dayOfWeek]);
   return results || [];
 }
+
+// --- Add these new types and functions to the bottom of the file ---
+
+export type Task = {
+  id: number;
+  subject_id: number | null;
+  title: string;
+  description: string | null;
+  due_date: string; // 'YYYY-MM-DD'
+  is_completed: number; // 0 or 1
+};
+
+// This type includes the subject name for display purposes
+export type TaskWithSubject = Task & {
+  subject_name: string | null;
+  subject_color: string | null;
+};
+
+/**
+ * Fetches all tasks, joining with subject data.
+ * @returns A promise that resolves to an array of all tasks.
+ */
+export async function getAllTasks(): Promise<TaskWithSubject[]> {
+  const db = await getDatabase();
+  const results = await db.getAllAsync<TaskWithSubject>(`
+    SELECT
+      tk.*,
+      s.name as subject_name,
+      s.color as subject_color
+    FROM tasks tk
+    LEFT JOIN subjects s ON tk.subject_id = s.id
+    ORDER BY tk.is_completed ASC, tk.due_date ASC;
+  `);
+  return results || [];
+}
+
+/**
+ * Adds a new task to the database.
+ */
+export async function addTask(task: {
+  title: string;
+  description?: string;
+  dueDate: string;
+  subjectId?: number | null;
+}): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync(
+    'INSERT INTO tasks (title, description, due_date, subject_id) VALUES (?, ?, ?, ?);',
+    [task.title, task.description || null, task.dueDate, task.subjectId === undefined || task.subjectId === -1 ? null : task.subjectId]
+  );
+}
+
+/**
+ * Toggles a task's completion status.
+ */
+export async function toggleTaskCompletion(id: number, isCompleted: boolean): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('UPDATE tasks SET is_completed = ? WHERE id = ?;', [isCompleted ? 1 : 0, id]);
+}
+
+/**
+ * Deletes a task from the database.
+ */
+export async function deleteTask(id: number): Promise<void> {
+  const db = await getDatabase();
+  await db.runAsync('DELETE FROM tasks WHERE id = ?;', [id]);
+}
