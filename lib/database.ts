@@ -611,3 +611,32 @@ export async function deleteTask(id: number): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM tasks WHERE id = ?;', [id]);
 }
+
+// --- Add this to the bottom of lib/database.ts ---
+
+export type ExportDataRow = {
+  date: string;
+  subject_name: string;
+  start_time: string;
+  end_time: string;
+  location: string | null;
+  status: AttendanceStatus;
+};
+
+export async function getFullAttendanceHistoryForExport(): Promise<ExportDataRow[]> {
+  const db = await getDatabase();
+  const results = await db.getAllAsync<ExportDataRow>(`
+    SELECT
+      ar.date,
+      s.name as subject_name,
+      t.start_time,
+      t.end_time,
+      t.location,
+      ar.status
+    FROM attendance_records ar
+    JOIN timetable t ON ar.timetable_id = t.id
+    JOIN subjects s ON t.subject_id = s.id
+    ORDER BY ar.date DESC, t.start_time ASC;
+  `);
+  return results || [];
+}
