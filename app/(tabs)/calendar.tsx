@@ -6,6 +6,8 @@ import AttendanceDetailCard from '../../components/AttendanceDetailCard';
 import { useTheme } from '../../context/ThemeContext';
 import { getAttendanceDetailsForDate, getMonthlyAttendanceSummary, markAttendance, type AttendanceDetail, type AttendanceStatus } from '../../lib/database';
 
+type MarkedDate = { dots?: any[]; selected?: boolean; selectedColor?: string };
+
 const getMonthBounds = (date: Date) => {
   const startDate = new Date(date.getFullYear(), date.getMonth(), 1);
   const endDate = new Date(date.getFullYear(), date.getMonth() + 1, 0);
@@ -23,7 +25,7 @@ export default function CalendarScreen() {
   const [selectedDate, setSelectedDate] = useState<DateData | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const [markedDates, setMarkedDates] = useState({});
+  const [markedDates, setMarkedDates] = useState<Record<string, MarkedDate>>({});
   const [selectedDayDetails, setSelectedDayDetails] = useState<AttendanceDetail[]>([]);
 
   const [isSummaryLoading, setIsSummaryLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function CalendarScreen() {
     const { startDate, endDate } = getMonthBounds(monthDate);
     try {
       const summary = await getMonthlyAttendanceSummary(startDate, endDate);
-      const newMarkedDates: { [key: string]: any } = {};
+      const newMarkedDates: Record<string, MarkedDate> = {};
       summary.forEach((daySummary, dateString) => {
         const dots = [];
         if (daySummary.present > 0) dots.push({ key: 'present', color: dotColors.present });
@@ -86,7 +88,7 @@ export default function CalendarScreen() {
     } catch (e) { console.error('Failed to update attendance'); }
   };
 
-  const finalMarkedDates = useMemo(() => {
+  const finalMarkedDates = useMemo<Record<string, MarkedDate>>(() => {
     if (!selectedDate) return markedDates;
     return {
       ...markedDates,
@@ -118,7 +120,7 @@ export default function CalendarScreen() {
 
   return (
     <View className="flex-1 bg-background dark:bg-dark-background">
-      <Stack.Screen options={{ title: "Attendance History" }} />
+      <Stack.Screen options={{ title: "Calendar" }} />
       <View className='p-4'>
         <Calendar
           key={theme} // <-- THIS IS THE FIX. Force re-mount on theme change.

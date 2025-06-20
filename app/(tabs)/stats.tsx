@@ -68,7 +68,7 @@ export default function StatsScreen() {
     const iconColor = theme === 'dark' ? '#A1A1AA' : '#6B7280';
     return (
       <View className="flex-1 justify-center items-center bg-background dark:bg-dark-background p-8">
-        <Stack.Screen options={{ title: 'Performance Stats' }} />
+        <Stack.Screen options={{ title: 'Stats' }} />
         <Ionicons name="stats-chart-outline" size={64} color={iconColor} style={{ marginBottom: 16 }} />
         <Text className="text-xl font-bold text-center text-text dark:text-dark-text">No Stats to Show</Text>
         <Text className="mt-2 text-center text-subtle-text dark:text-dark-subtle-text">
@@ -80,7 +80,7 @@ export default function StatsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-dark-background" contentContainerStyle={{ padding: 24 }}>
-      <Stack.Screen options={{ title: 'Performance Stats' }} />
+      <Stack.Screen options={{ title: 'Stats' }} />
 
       {/* Highlights Section */}
       <View className="mb-8">

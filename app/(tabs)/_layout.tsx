@@ -82,6 +82,13 @@ const colors = {
         }}
       />
       <Tabs.Screen
+        name="tasks" // This should match your file name `app/(tabs)/tasks.tsx`
+        options={{
+          title: 'Tasks',
+          tabBarIcon: ({ color }) => <TabBarIcon name="checkmark-done-outline" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',

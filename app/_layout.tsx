@@ -98,6 +98,13 @@ function RootNavigator() {
           title: 'Add Class to Schedule',
         }}
       />
+      <Stack.Screen
+        name="add-task"
+        options={{
+          presentation: 'modal',
+          title: 'Add New Task',
+        }}
+      />
       <Stack.Screen name="subject/[id]" options={{ title: 'Edit Subject' }} />
     </Stack>
   );
