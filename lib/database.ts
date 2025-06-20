@@ -1,4 +1,4 @@
-import * as SQLite from 'expo-sqlite';
+import * as SQLite from "expo-sqlite";
 
 // --- THE FIX STARTS HERE ---
 
@@ -13,7 +13,7 @@ const getDbPromise = (): Promise<SQLite.SQLiteDatabase> => {
   if (dbPromise === null) {
     // If the promise is null, this is the first time it's being called.
     // Create the promise and store it.
-    dbPromise = SQLite.openDatabaseAsync('rollcall.db');
+    dbPromise = SQLite.openDatabaseAsync("rollcall.db");
   }
   // Return the existing promise on all subsequent calls.
   return dbPromise;
@@ -28,7 +28,6 @@ export const getDatabase = async () => {
 };
 
 // --- THE FIX ENDS HERE ---
-
 
 /**
  * Initializes the database tables if they don't exist.
@@ -60,13 +59,16 @@ export async function initializeDatabase() {
     );
 
     CREATE TABLE IF NOT EXISTS attendance_records (
-      id INTEGER PRIMARY KEY NOT NULL,
-      timetable_id INTEGER NOT NULL,
-      date TEXT NOT NULL,
-      status TEXT NOT NULL,
-      notes TEXT,
-      FOREIGN KEY (timetable_id) REFERENCES timetable (id) ON DELETE CASCADE
-    );
+  id INTEGER PRIMARY KEY NOT NULL,
+  timetable_id INTEGER NOT NULL,
+  date TEXT NOT NULL,
+  status TEXT NOT NULL,
+  notes TEXT,
+  FOREIGN KEY (timetable_id) REFERENCES timetable (id) ON DELETE CASCADE,
+  -- This is the crucial fix. It tells the database that the combination
+  -- of timetable_id and date must be unique across all rows.
+  UNIQUE(timetable_id, date) 
+);
 
     CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY NOT NULL,
@@ -80,13 +82,12 @@ export async function initializeDatabase() {
   `);
   // Migration: add teacher_name column if it doesn't exist
   try {
-    await db.execAsync('ALTER TABLE subjects ADD COLUMN teacher_name TEXT;');
+    await db.execAsync("ALTER TABLE subjects ADD COLUMN teacher_name TEXT;");
   } catch (e) {
     // Ignore error if column already exists
   }
-  console.log('Database initialized successfully with singleton pattern.');
+  console.log("Database initialized successfully with singleton pattern.");
 }
-
 
 // --- Our query functions now use the new getDatabase() helper ---
 
@@ -100,9 +101,46 @@ export type Subject = {
   historical_classes_attended: number;
 };
 
+// --- Add this new type and function ---
+
+// This type includes the original Subject fields PLUS the calculated attendance
+export type SubjectWithAttendance = Subject & {
+  recorded_present: number;
+  recorded_absent: number;
+};
+
+/**
+ * Fetches all subjects and joins their real-time attendance counts.
+ * This is the primary function for the subjects list screen.
+ */
+export async function getSubjectsWithAttendance(): Promise<SubjectWithAttendance[]> {
+  const db = await getDatabase();
+  const results = await db.getAllAsync<SubjectWithAttendance>(`
+    SELECT
+      s.*,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM attendance_records ar
+        JOIN timetable t ON ar.timetable_id = t.id
+        WHERE t.subject_id = s.id AND ar.status = 'present'
+      ), 0) as recorded_present,
+      COALESCE((
+        SELECT COUNT(*)
+        FROM attendance_records ar
+        JOIN timetable t ON ar.timetable_id = t.id
+        WHERE t.subject_id = s.id AND ar.status = 'absent'
+      ), 0) as recorded_absent
+    FROM subjects s
+    ORDER BY s.name ASC;
+  `);
+  return results || [];
+}
+
 export async function getAllSubjects(): Promise<Subject[]> {
   const db = await getDatabase();
-  const results = await db.getAllAsync<Subject>('SELECT * FROM subjects ORDER BY name ASC;');
+  const results = await db.getAllAsync<Subject>(
+    "SELECT * FROM subjects ORDER BY name ASC;"
+  );
   return results || [];
 }
 
@@ -116,7 +154,7 @@ export async function addSubject(data: {
 }): Promise<Subject> {
   const db = await getDatabase();
   const result = await db.runAsync(
-    'INSERT INTO subjects (name, color, target_attendance, teacher_name, historical_classes_held, historical_classes_attended) VALUES (?, ?, ?, ?, ?, ?);',
+    "INSERT INTO subjects (name, color, target_attendance, teacher_name, historical_classes_held, historical_classes_attended) VALUES (?, ?, ?, ?, ?, ?);",
     [
       data.name,
       data.color,
@@ -126,20 +164,19 @@ export async function addSubject(data: {
       data.classesAttended || 0,
     ]
   );
-  
+
   const newSubjectId = result.lastInsertRowId;
   const newSubject = await db.getFirstAsync<Subject>(
-    'SELECT * FROM subjects WHERE id = ?;',
+    "SELECT * FROM subjects WHERE id = ?;",
     [newSubjectId]
   );
 
   if (!newSubject) {
-    throw new Error('Failed to create and retrieve the new subject.');
+    throw new Error("Failed to create and retrieve the new subject.");
   }
 
   return newSubject;
 }
-
 
 export type TimetableEntry = {
   id: number;
@@ -193,8 +230,14 @@ export async function addTimetableEntry(entry: {
 }): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'INSERT INTO timetable (subject_id, day_of_week, start_time, end_time, location) VALUES (?, ?, ?, ?, ?);',
-    [entry.subjectId, entry.dayOfWeek, entry.startTime, entry.endTime, entry.location || null]
+    "INSERT INTO timetable (subject_id, day_of_week, start_time, end_time, location) VALUES (?, ?, ?, ?, ?);",
+    [
+      entry.subjectId,
+      entry.dayOfWeek,
+      entry.startTime,
+      entry.endTime,
+      entry.location || null,
+    ]
   );
 }
 
@@ -208,7 +251,7 @@ export async function addTimetableEntry(entry: {
 export async function getSubjectById(id: number): Promise<Subject | null> {
   const db = await getDatabase();
   const subject = await db.getFirstAsync<Subject>(
-    'SELECT * FROM subjects WHERE id = ?;',
+    "SELECT * FROM subjects WHERE id = ?;",
     [id]
   );
   return subject || null;
@@ -220,10 +263,18 @@ export async function getSubjectById(id: number): Promise<Subject | null> {
  * @param data An object containing the new name, color, and target.
  * @returns A promise that resolves when the update is complete.
  */
-export async function updateSubject(id: number, data: { name: string; color: string; targetAttendance: number; teacherName?: string }): Promise<void> {
+export async function updateSubject(
+  id: number,
+  data: {
+    name: string;
+    color: string;
+    targetAttendance: number;
+    teacherName?: string;
+  }
+): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'UPDATE subjects SET name = ?, color = ?, target_attendance = ?, teacher_name = ? WHERE id = ?;',
+    "UPDATE subjects SET name = ?, color = ?, target_attendance = ?, teacher_name = ? WHERE id = ?;",
     [data.name, data.color, data.targetAttendance, data.teacherName || null, id]
   );
 }
@@ -237,7 +288,7 @@ export async function updateSubject(id: number, data: { name: string; color: str
  */
 export async function deleteSubject(id: number): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM subjects WHERE id = ?;', [id]);
+  await db.runAsync("DELETE FROM subjects WHERE id = ?;", [id]);
 }
 
 // Add at the bottom of lib/database.ts
@@ -255,8 +306,15 @@ export async function updateTimetableEntry(entry: {
 }): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'UPDATE timetable SET subject_id = ?, day_of_week = ?, start_time = ?, end_time = ?, location = ? WHERE id = ?;',
-    [entry.subjectId, entry.dayOfWeek, entry.startTime, entry.endTime, entry.location || null, entry.id]
+    "UPDATE timetable SET subject_id = ?, day_of_week = ?, start_time = ?, end_time = ?, location = ? WHERE id = ?;",
+    [
+      entry.subjectId,
+      entry.dayOfWeek,
+      entry.startTime,
+      entry.endTime,
+      entry.location || null,
+      entry.id,
+    ]
   );
 }
 
@@ -265,7 +323,7 @@ export async function updateTimetableEntry(entry: {
  */
 export async function deleteTimetableEntry(id: number): Promise<void> {
   const db = await getDatabase();
-  await db.runAsync('DELETE FROM timetable WHERE id = ?;', [id]);
+  await db.runAsync("DELETE FROM timetable WHERE id = ?;", [id]);
 }
 
 // --- Add these new functions to the bottom of the file ---
@@ -275,12 +333,30 @@ export async function deleteTimetableEntry(id: number): Promise<void> {
  * @param dayOfWeek The index of the day (0 for Sunday, 1 for Monday...).
  * @returns A promise that resolves to an array of scheduled classes for that day.
  */
-export async function getClassesForDay(dayOfWeek: number): Promise<FullTimetableEntry[]> {
+
+export type ClassWithSubjectAttendance = FullTimetableEntry & {
+  target_attendance: number;
+  historical_classes_held: number;
+  historical_classes_attended: number;
+  recorded_present: number;
+  recorded_absent: number;
+};
+
+export async function getClassesForDayWithAttendance(dayOfWeek: number): Promise<ClassWithSubjectAttendance[]> {
   const db = await getDatabase();
-  const results = await db.getAllAsync<FullTimetableEntry>(`
+  const results = await db.getAllAsync<ClassWithSubjectAttendance>(`
     SELECT
       t.id, t.subject_id, t.day_of_week, t.start_time, t.end_time, t.location,
-      s.name as subject_name, s.color as subject_color
+      s.name as subject_name, s.color as subject_color,
+      s.target_attendance, s.historical_classes_held, s.historical_classes_attended,
+      COALESCE((
+        SELECT COUNT(*) FROM attendance_records ar JOIN timetable t2 ON ar.timetable_id = t2.id
+        WHERE t2.subject_id = s.id AND ar.status = 'present'
+      ), 0) as recorded_present,
+      COALESCE((
+        SELECT COUNT(*) FROM attendance_records ar JOIN timetable t3 ON ar.timetable_id = t3.id
+        WHERE t3.subject_id = s.id AND ar.status = 'absent'
+      ), 0) as recorded_absent
     FROM timetable t
     JOIN subjects s ON t.subject_id = s.id
     WHERE t.day_of_week = ?
@@ -298,7 +374,10 @@ export async function calculateOverallAttendance(): Promise<number | null> {
   const db = await getDatabase();
 
   // 1. Get historical totals from all subjects
-  const historicalTotals = await db.getFirstAsync<{ totalHeld: number; totalAttended: number }>(`
+  const historicalTotals = await db.getFirstAsync<{
+    totalHeld: number;
+    totalAttended: number;
+  }>(`
     SELECT
       SUM(historical_classes_held) as totalHeld,
       SUM(historical_classes_attended) as totalAttended
@@ -306,15 +385,22 @@ export async function calculateOverallAttendance(): Promise<number | null> {
   `);
 
   // 2. Get totals from the attendance_records table
-  const recordTotals = await db.getFirstAsync<{ presentCount: number; absentCount: number }>(`
+  const recordTotals = await db.getFirstAsync<{
+    presentCount: number;
+    absentCount: number;
+  }>(`
     SELECT
       SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as presentCount,
       SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absentCount
     FROM attendance_records;
   `);
 
-  const totalAttended = (historicalTotals?.totalAttended || 0) + (recordTotals?.presentCount || 0);
-  const totalHeld = (historicalTotals?.totalHeld || 0) + (recordTotals?.presentCount || 0) + (recordTotals?.absentCount || 0);
+  const totalAttended =
+    (historicalTotals?.totalAttended || 0) + (recordTotals?.presentCount || 0);
+  const totalHeld =
+    (historicalTotals?.totalHeld || 0) +
+    (recordTotals?.presentCount || 0) +
+    (recordTotals?.absentCount || 0);
 
   if (totalHeld === 0) {
     return null; // Avoid division by zero
@@ -324,7 +410,7 @@ export async function calculateOverallAttendance(): Promise<number | null> {
 }
 
 // Type for the status of attendance
-export type AttendanceStatus = 'present' | 'absent' | 'cancelled' | 'holiday';
+export type AttendanceStatus = "present" | "absent" | "cancelled" | "holiday";
 
 /**
  * Marks or updates the attendance for a specific class on a specific date.
@@ -333,7 +419,11 @@ export type AttendanceStatus = 'present' | 'absent' | 'cancelled' | 'holiday';
  * @param date The date in 'YYYY-MM-DD' format.
  * @param status The new attendance status.
  */
-export async function markAttendance(timetableId: number, date: string, status: AttendanceStatus): Promise<void> {
+export async function markAttendance(
+  timetableId: number,
+  date: string,
+  status: AttendanceStatus
+): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
     `INSERT INTO attendance_records (timetable_id, date, status)
@@ -350,18 +440,22 @@ export async function markAttendance(timetableId: number, date: string, status: 
  * @param date The date in 'YYYY-MM-DD' format.
  * @returns A promise that resolves to a Map of [timetableId, status].
  */
-export async function getAttendanceForDate(date: string): Promise<Map<number, AttendanceStatus>> {
+export async function getAttendanceForDate(
+  date: string
+): Promise<Map<number, AttendanceStatus>> {
   const db = await getDatabase();
-  const records = await db.getAllAsync<{ timetable_id: number; status: AttendanceStatus }>(
-    'SELECT timetable_id, status FROM attendance_records WHERE date = ?;',
-    [date]
-  );
-  
+  const records = await db.getAllAsync<{
+    timetable_id: number;
+    status: AttendanceStatus;
+  }>("SELECT timetable_id, status FROM attendance_records WHERE date = ?;", [
+    date,
+  ]);
+
   // Using a Map is highly efficient for lookups.
   const recordsMap = new Map<number, AttendanceStatus>();
   for (const record of records) {
     recordsMap.set(record.timetable_id, record.status);
   }
-  
+
   return recordsMap;
 }

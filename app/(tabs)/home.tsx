@@ -2,19 +2,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
-import SegmentedCircle from '../../components/SegmentedCircle';
 import TodayClassCard from '../../components/TodayClassCard';
 import { useTheme } from '../../context/ThemeContext';
 import {
   calculateOverallAttendance,
   getAttendanceForDate,
-  getClassesForDay,
+  getClassesForDayWithAttendance,
   markAttendance,
   type AttendanceStatus,
-  type FullTimetableEntry,
+  type ClassWithSubjectAttendance,
 } from '../../lib/database';
 
-// Helper to format date as YYYY-MM-DD
 const getFormattedDate = (date: Date) => {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -26,14 +24,13 @@ export default function HomeScreen() {
   const { theme } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [overallAttendance, setOverallAttendance] = useState<number | null>(null);
-  const [todaysClasses, setTodaysClasses] = useState<FullTimetableEntry[]>([]);
+  const [todaysClasses, setTodaysClasses] = useState<ClassWithSubjectAttendance[]>([]);
   const [attendanceRecords, setAttendanceRecords] = useState<Map<number, AttendanceStatus>>(new Map());
 
   const today = new Date();
   const formattedDate = getFormattedDate(today);
   const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
-  // Load all necessary data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
@@ -41,7 +38,7 @@ export default function HomeScreen() {
         try {
           const dayOfWeek = today.getDay();
           const [classes, overall, records] = await Promise.all([
-            getClassesForDay(dayOfWeek),
+            getClassesForDayWithAttendance(dayOfWeek),
             calculateOverallAttendance(),
             getAttendanceForDate(formattedDate),
           ]);
@@ -58,9 +55,7 @@ export default function HomeScreen() {
     }, [])
   );
 
-  // Handle marking attendance
   const handleMarkAttendance = async (timetableId: number, status: AttendanceStatus) => {
-    // Optimistic update for instant UI feedback
     const originalRecords = new Map(attendanceRecords);
     const newRecords = new Map(attendanceRecords);
     newRecords.set(timetableId, status);
@@ -70,11 +65,10 @@ export default function HomeScreen() {
       await markAttendance(timetableId, formattedDate, status);
     } catch (error) {
       console.error('Failed to mark attendance:', error);
-      // Revert on error
       setAttendanceRecords(originalRecords);
     }
   };
-  
+
   const renderEmptyState = () => {
     const iconColor = theme === 'dark' ? '#A1A1AA' : '#6B7280';
     return (
@@ -87,31 +81,36 @@ export default function HomeScreen() {
       </View>
     );
   };
-  
+
   if (isLoading) {
     return <View className="flex-1 justify-center items-center bg-background dark:bg-dark-background"><ActivityIndicator size="large" /></View>;
   }
 
   return (
     <ScrollView className="flex-1 bg-background dark:bg-dark-background" contentContainerStyle={{ padding: 24, paddingBottom: 60 }}>
-      {/* Header Greeting */}
       <View>
         <Text className="text-3xl font-bold text-text dark:text-dark-text">Hello!</Text>
         <Text className="text-lg text-subtle-text dark:text-dark-subtle-text">{dateString}</Text>
       </View>
 
-      {/* Overall Attendance Card */}
-      <View className="mt-8 items-center justify-center rounded-2xl bg-card dark:bg-dark-card p-6">
-        <Text className="text-lg font-semibold text-subtle-text dark:text-dark-subtle-text mb-4">Overall Attendance</Text>
-        <SegmentedCircle
-          percent={overallAttendance}
-          color={overallAttendance && overallAttendance >= 75 ? '#10B981' : '#EF4444'}
-          size={150}
-          segments={20}
-        />
+      <View className="mt-8">
+        <Text className="text-2xl font-bold text-text dark:text-dark-text mb-4">At a Glance</Text>
+        <View className="flex-row" style={{ gap: 16 }}>
+          <View className="flex-1 items-center justify-center rounded-2xl bg-present/10 dark:bg-dark-present/40 p-4">
+            <Text className="text-3xl font-bold text-present-text dark:text-dark-present-text">
+              {overallAttendance === null ? 'N/A' : `${Math.round(overallAttendance)}%`}
+            </Text>
+            <Text className="text-sm font-medium text-subtle-text dark:text-dark-subtle-text mt-1">Overall</Text>
+          </View>
+          <View className="flex-1 items-center justify-center rounded-2xl bg-holiday/10 dark:bg-dark-holiday/40 p-4">
+            <Text className="text-3xl font-bold text-holiday-text dark:text-dark-holiday-text">
+              {todaysClasses.length}
+            </Text>
+            <Text className="text-sm font-medium text-subtle-text dark:text-dark-subtle-text mt-1">Classes Today</Text>
+          </View>
+        </View>
       </View>
       
-      {/* Today's Schedule */}
       <View className="mt-8">
         <Text className="text-2xl font-bold text-text dark:text-dark-text">Today's Schedule</Text>
         {todaysClasses.length > 0 ? (
