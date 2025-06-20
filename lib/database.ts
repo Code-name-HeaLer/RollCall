@@ -459,3 +459,88 @@ export async function getAttendanceForDate(
 
   return recordsMap;
 }
+
+// --- Add this new type and function to the bottom of the file ---
+
+// This type will hold the summary of statuses for a single day.
+export type DayAttendanceSummary = {
+  present: number;
+  absent: number;
+  cancelled: number;
+  holiday: number;
+};
+
+/**
+ * Fetches a summary of attendance statuses for each day within a given date range.
+ * @param startDate The start date in 'YYYY-MM-DD' format.
+ * @param endDate The end date in 'YYYY-MM-DD' format.
+ * @returns A promise that resolves to a Map where the key is the date string
+ *          and the value is the DayAttendanceSummary object.
+ */
+export async function getMonthlyAttendanceSummary(
+  startDate: string,
+  endDate: string
+): Promise<Map<string, DayAttendanceSummary>> {
+  const db = await getDatabase();
+  const results = await db.getAllAsync<{
+    date: string;
+    present: number;
+    absent: number;
+    cancelled: number;
+    holiday: number;
+  }>(`
+    SELECT
+      date,
+      SUM(CASE WHEN status = 'present' THEN 1 ELSE 0 END) as present,
+      SUM(CASE WHEN status = 'absent' THEN 1 ELSE 0 END) as absent,
+      SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+      SUM(CASE WHEN status = 'holiday' THEN 1 ELSE 0 END) as holiday
+    FROM attendance_records
+    WHERE date BETWEEN ? AND ?
+    GROUP BY date;
+  `, [startDate, endDate]);
+
+  const summaryMap = new Map<string, DayAttendanceSummary>();
+  for (const row of results) {
+    summaryMap.set(row.date, {
+      present: row.present,
+      absent: row.absent,
+      cancelled: row.cancelled,
+      holiday: row.holiday,
+    });
+  }
+  
+  return summaryMap;
+}
+
+// --- Add this new type and function ---
+
+export type AttendanceDetail = FullTimetableEntry & {
+  status: AttendanceStatus | null; // Status can be null if not yet marked
+};
+
+/**
+ * Fetches all scheduled classes for a given day of the week and joins their
+ * attendance status for a specific date.
+ * @param date The specific date in 'YYYY-MM-DD' format.
+ * @param dayOfWeek The day of the week index (0 for Sunday).
+ * @returns A promise that resolves to an array of class details for that day.
+ */
+export async function getAttendanceDetailsForDate(
+  date: string,
+  dayOfWeek: number
+): Promise<AttendanceDetail[]> {
+  const db = await getDatabase();
+  const results = await db.getAllAsync<AttendanceDetail>(`
+    SELECT
+      t.id, t.subject_id, t.day_of_week, t.start_time, t.end_time, t.location,
+      s.name as subject_name, s.color as subject_color,
+      ar.status as status
+    FROM timetable t
+    JOIN subjects s ON t.subject_id = s.id
+    LEFT JOIN attendance_records ar ON t.id = ar.timetable_id AND ar.date = ?
+    WHERE t.day_of_week = ?
+    ORDER BY t.start_time ASC;
+  `, [date, dayOfWeek]);
+  return results || [];
+}
