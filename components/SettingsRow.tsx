@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, Switch, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
@@ -17,6 +17,17 @@ export default function SettingsRow({ icon, label, description, type, onPress, v
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
+  // Local state for switch to prevent flash
+  const [localValue, setLocalValue] = useState(value);
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleSwitch = (val: boolean) => {
+    setLocalValue(val);
+    if (onValueChange) onValueChange(val);
+  };
+
   return (
     <Pressable onPress={onPress} className="active:bg-black/5 dark:active:bg-white/5">
       <View className="flex-row items-center p-4">
@@ -30,8 +41,8 @@ export default function SettingsRow({ icon, label, description, type, onPress, v
         {type === 'navigate' && <Ionicons name="chevron-forward" size={22} color={isDark ? '#4B5563' : '#9CA3AF'} />}
         {type === 'switch' && (
           <Switch
-            value={value}
-            onValueChange={onValueChange}
+            value={!!localValue}
+            onValueChange={handleSwitch}
             trackColor={{ false: '#767577', true: '#10B981' }}
             thumbColor={'#f4f3f4'}
           />

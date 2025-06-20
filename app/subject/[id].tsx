@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import ColorPicker from '../../components/ColorPicker';
 import StyledInput from '../../components/StyledInput';
+import { useTheme } from '../../context/ThemeContext';
 import { deleteSubject, getSubjectById, updateSubject, type Subject } from '../../lib/database';
 
 const PRESET_COLORS = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#0EA5E9', '#6366F1', '#A855F7', '#EC4899'];
@@ -11,6 +12,7 @@ const PRESET_COLORS = ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#14B8A6', '#
 export default function SubjectDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const subjectId = parseInt(id || '0', 10);
+  const { theme } = useTheme();
 
   const [subject, setSubject] = useState<Subject | null>(null);
   const [name, setName] = useState('');
@@ -84,12 +86,12 @@ export default function SubjectDetailsScreen() {
         )}
       </View>
       <View className="space-y-5">
-        <Pressable onPress={handleUpdate} disabled={isSaving} className="w-full items-center justify-center rounded-xl bg-primary p-4 active:opacity-80 disabled:opacity-50">
-          {isSaving ? <ActivityIndicator color="white" /> : <Text className="text-xl font-bold text-white">Save Changes</Text>}
+        <Pressable onPress={handleUpdate} disabled={isSaving} className="w-full flex-row items-center justify-center rounded-xl bg-primary p-4 active:opacity-80 disabled:opacity-50">
+          {isSaving ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark" size={22} color="white" /><Text className="ml-2 text-xl font-bold text-white">Save Changes</Text></>}
         </Pressable>
-        <Pressable onPress={handleDelete} className="w-full flex-row items-center justify-center rounded-xl bg-absent/20 p-4 active:opacity-80 mt-3">
-          <Ionicons name="trash-outline" size={20} color="#991B1B" />
-          <Text className="ml-2 text-lg font-bold" style={{ color: '#991B1B' }}>Delete Subject</Text>
+        <Pressable onPress={handleDelete} className="w-full flex-row items-center justify-center rounded-xl bg-absent dark:bg-[#7a2323] p-4 active:opacity-80 mt-3">
+          <Ionicons name="trash-outline" size={22} color={theme === 'dark' ? '#fecaca' : '#991B1B'} />
+          <Text className="ml-2 text-xl font-bold text-absent-text dark:text-dark-absent-text">Delete Subject</Text>
         </Pressable>
       </View>
     </ScrollView>

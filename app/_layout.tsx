@@ -1,8 +1,8 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as SystemUI from 'expo-system-ui'; // <-- Import the powerful SystemUI API
-import { useEffect } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import React, { useEffect } from 'react';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { initializeDatabase } from '../lib/database';
 
@@ -63,49 +63,58 @@ function RootNavigator() {
     primary: '#10B981' // Keep primary for tint color
   };
 
-  // FIX FOR WHITE FLASH: This effect sets the app's root background color.
-  // This is more powerful than styling a navigator's content.
-  useEffect(() => {
-    SystemUI.setBackgroundColorAsync(colors.background);
-  }, [colors.background]);
-
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.text },
-        headerTintColor: colors.primary, // Use a consistent accent color for back buttons
-        contentStyle: { backgroundColor: colors.background },
-      }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="add-subject"
-        options={{
-          presentation: 'modal',
-          title: 'Add New Subject',
-        }}
-      />
-      <Stack.Screen
-        name="timetable"
-        options={{
-          title: 'Manage Timetable',
-        }}
-      />
-      <Stack.Screen
-        name="add-timetable-entry"
-        options={{
-          presentation: 'modal',
-          title: 'Add Class to Schedule',
-        }}
-      />
-      <Stack.Screen
-        name="add-task"
-        options={{
-          presentation: 'modal',
-          title: 'Add New Task',
-        }}
-      />
-      <Stack.Screen name="subject/[id]" options={{ title: 'Edit Subject' }} />
-    </Stack>
+    <>
+      <StatusBar backgroundColor={colors.background} style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.text },
+          headerTintColor: colors.primary, // Use a consistent accent color for back buttons
+          contentStyle: { backgroundColor: colors.background },
+          animation: 'slide_from_right', // Animate all screens with slide
+          gestureEnabled: true, // Enable swipe gestures
+          gestureDirection: 'horizontal',
+        }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="add-subject"
+          options={{
+            presentation: 'modal',
+            title: 'Add New Subject',
+            animation: 'fade', // Modal fade in
+            gestureEnabled: true,
+            gestureDirection: 'vertical',
+          }}
+        />
+        <Stack.Screen
+          name="timetable"
+          options={{
+            title: 'Manage Timetable',
+          }}
+        />
+        <Stack.Screen
+          name="add-timetable-entry"
+          options={{
+            presentation: 'modal',
+            title: 'Add Class to Schedule',
+            animation: 'fade',
+            gestureEnabled: true,
+            gestureDirection: 'vertical',
+          }}
+        />
+        <Stack.Screen
+          name="add-task"
+          options={{
+            presentation: 'modal',
+            title: 'Add New Task',
+            animation: 'fade',
+            gestureEnabled: true,
+            gestureDirection: 'vertical',
+          }}
+        />
+        <Stack.Screen name="subject/[id]" options={{ title: 'Edit Subject' }} />
+      </Stack>
+    </>
   );
 }

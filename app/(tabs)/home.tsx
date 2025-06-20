@@ -106,13 +106,13 @@ export default function HomeScreen() {
       <View className="mt-8">
         <Text className="text-2xl font-bold text-text dark:text-dark-text mb-4">At a Glance</Text>
         <View className="flex-row" style={{ gap: 16 }}>
-          <View className="flex-1 items-center justify-center rounded-2xl bg-present/10 dark:bg-dark-present/40 p-4">
+          <View className="flex-1 items-center justify-center rounded-2xl bg-present/40 dark:bg-dark-present/40 p-4">
             <Text className="text-3xl font-bold text-present-text dark:text-dark-present-text">
               {overallAttendance === null ? 'N/A' : `${Math.round(overallAttendance)}%`}
             </Text>
             <Text className="text-sm font-medium text-subtle-text dark:text-dark-subtle-text mt-1">Overall</Text>
           </View>
-          <View className="flex-1 items-center justify-center rounded-2xl bg-holiday/10 dark:bg-dark-holiday/40 p-4">
+          <View className="flex-1 items-center justify-center rounded-2xl bg-holiday/40 dark:bg-dark-holiday/40 p-4">
             <Text className="text-3xl font-bold text-holiday-text dark:text-dark-holiday-text">
               {todaysClasses.length}
             </Text>

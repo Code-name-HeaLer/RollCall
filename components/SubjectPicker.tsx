@@ -62,9 +62,10 @@ export default function SubjectPicker({ label, subjects, selectedValue, onValueC
             />
             <Pressable
               onPress={() => setShowModal(false)}
-              className="mt-4 items-center justify-center rounded-lg bg-gray-300 p-3"
+              className="mt-4 flex-row items-center justify-center rounded-lg bg-gray-100 dark:bg-[#23272f] p-3"
             >
-              <Text className="text-base font-medium" style={{ color: isDark ? '#EAEAEA' : '#1F2937' }}>Cancel</Text>
+              <Ionicons name="close" size={22} color={isDark ? '#EAEAEA' : '#1F2937'} />
+              <Text className="ml-2 text-xl font-bold text-text dark:text-dark-text">Cancel</Text>
             </Pressable>
           </View>
         </View>

@@ -241,20 +241,21 @@ export default function TimetableScreen() {
               <Pressable
                 onPress={handleEditSave}
                 disabled={editLoading}
-                className="w-full items-center justify-center rounded-xl bg-primary p-4 active:opacity-80 disabled:opacity-50">
-                {editLoading ? <ActivityIndicator color="white" /> : <Text className="text-xl font-bold text-white">Save Changes</Text>}
+                className="w-full flex-row items-center justify-center rounded-xl bg-primary p-4 active:opacity-80 disabled:opacity-50">
+                {editLoading ? <ActivityIndicator color="white" /> : <><Ionicons name="checkmark" size={22} color="white" /><Text className="ml-2 text-xl font-bold text-white">Save Changes</Text></>}
               </Pressable>
               <Pressable
                 onPress={handleEditDelete}
                 disabled={editLoading}
-                className="w-full flex-row items-center justify-center rounded-xl bg-absent/20 p-4 active:opacity-80 mt-3">
-                <Ionicons name="trash-outline" size={20} color="#991B1B" />
-                <Text className="ml-2 text-lg font-bold" style={{ color: '#991B1B' }}>Delete</Text>
+                className="w-full flex-row items-center justify-center rounded-xl bg-absent dark:bg-[#7a2323] p-4 active:opacity-80 mt-3">
+                <Ionicons name="trash-outline" size={22} color={theme === 'dark' ? '#fecaca' : '#991B1B'} />
+                <Text className="ml-2 text-xl font-bold text-absent-text dark:text-dark-absent-text">Delete</Text>
               </Pressable>
               <Pressable
                 onPress={() => setEditModalVisible(false)}
-                className="w-full items-center justify-center rounded-xl bg-gray-300 p-4 mt-2">
-                <Text className="text-base font-medium" style={{ color: theme === 'dark' ? '#EAEAEA' : '#1F2937' }}>Cancel</Text>
+                className="w-full flex-row items-center justify-center rounded-xl bg-gray-100 dark:bg-[#23272f] p-4 mt-2">
+                <Ionicons name="close" size={22} color={theme === 'dark' ? '#EAEAEA' : '#1F2937'} />
+                <Text className="ml-2 text-xl font-bold text-text dark:text-dark-text">Cancel</Text>
               </Pressable>
             </View>
           </ScrollView>
