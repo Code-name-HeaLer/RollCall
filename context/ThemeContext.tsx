@@ -20,7 +20,9 @@ const THEME_STORAGE_KEY = 'app-theme';
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // This is the correct hook from NativeWind v4.
   // It gives us the current theme ('colorScheme') and the function to change it ('setColorScheme').
-  const { colorScheme, setColorScheme } = useNativeWindColorScheme();
+  const nativeWind = useNativeWindColorScheme();
+  const colorScheme = (nativeWind as any)?.colorScheme as Theme || 'light';
+  const setColorScheme = (nativeWind as any)?.setColorScheme as (theme: Theme) => void;
 
   // We only use the device's color scheme to determine the initial theme on first launch.
   const { colorScheme: deviceTheme } = useDeviceColorScheme();
@@ -47,17 +49,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleTheme = async () => {
-    // Determine the new theme based on the current theme.
+  const toggleTheme = () => {
     const newTheme = colorScheme === 'light' ? 'dark' : 'light';
-    // Tell NativeWind to switch. This will update styles everywhere.
-    setColorScheme(newTheme);
-    try {
-      // Save the user's new preference to storage.
-      await AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme);
-    } catch (error)      {
+    setColorScheme(newTheme); // Synchronous update for instant UI change
+    AsyncStorage.setItem(THEME_STORAGE_KEY, newTheme).catch((error) => {
       console.error('Failed to save theme to storage', error);
-    }
+    });
   };
 
   const value = {
