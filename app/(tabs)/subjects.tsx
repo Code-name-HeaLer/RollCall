@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router, useFocusEffect } from 'expo-router';
+import { Stack, router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import SubjectListItem from '../../components/SubjectListItem';
@@ -56,6 +56,22 @@ export default function SubjectsScreen() {
 
   return (
     <View className="flex-1 bg-background dark:bg-dark-background">
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={() => router.push('/timetable')}>
+              {({ pressed }) => (
+                <Ionicons
+                  name="calendar-outline"
+                  size={26}
+                  color="#10B981" // Our primary color
+                  style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                />
+              )}
+            </Pressable>
+          ),
+        }}
+      />
       <FlatList
         data={subjects}
         keyExtractor={(item) => item.id.toString()}

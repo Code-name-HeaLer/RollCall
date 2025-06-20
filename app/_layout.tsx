@@ -85,6 +85,20 @@ function RootNavigator() {
           title: 'Add New Subject',
         }}
       />
+      <Stack.Screen
+        name="timetable"
+        options={{
+          title: 'Manage Timetable',
+        }}
+      />
+      <Stack.Screen
+        name="add-timetable-entry"
+        options={{
+          presentation: 'modal',
+          title: 'Add Class to Schedule',
+        }}
+      />
+      <Stack.Screen name="subject/[id]" options={{ title: 'Edit Subject' }} />
     </Stack>
   );
 }
