@@ -31,40 +31,50 @@ export default function HomeScreen() {
   const formattedDate = getFormattedDate(today);
   const dateString = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 
+  const loadData = useCallback(async () => {
+    // We moved the loading logic into its own function to be reusable.
+    try {
+      const dayOfWeek = today.getDay();
+      const [classes, overall, records] = await Promise.all([
+        getClassesForDayWithAttendance(dayOfWeek),
+        calculateOverallAttendance(),
+        getAttendanceForDate(formattedDate),
+      ]);
+      setTodaysClasses(classes);
+      setOverallAttendance(overall);
+      setAttendanceRecords(records);
+    } catch (error) {
+      console.error('Failed to load home screen data:', error);
+    }
+  }, [formattedDate]);
+
   useFocusEffect(
     useCallback(() => {
-      const loadData = async () => {
-        setIsLoading(true);
-        try {
-          const dayOfWeek = today.getDay();
-          const [classes, overall, records] = await Promise.all([
-            getClassesForDayWithAttendance(dayOfWeek),
-            calculateOverallAttendance(),
-            getAttendanceForDate(formattedDate),
-          ]);
-          setTodaysClasses(classes);
-          setOverallAttendance(overall);
-          setAttendanceRecords(records);
-        } catch (error) {
-          console.error('Failed to load home screen data:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      loadData();
-    }, [])
+      setIsLoading(true);
+      loadData().finally(() => setIsLoading(false));
+    }, [loadData])
   );
 
-  const handleMarkAttendance = async (timetableId: number, status: AttendanceStatus) => {
+  // --- THIS IS THE NEW, ROBUST FUNCTION ---
+  const handleMarkAttendance = async (timetableId: number, newStatus: AttendanceStatus) => {
+    // 1. Perform a simple optimistic update for the button highlights ONLY.
+    // This makes the UI feel instant.
     const originalRecords = new Map(attendanceRecords);
     const newRecords = new Map(attendanceRecords);
-    newRecords.set(timetableId, status);
+    newRecords.set(timetableId, newStatus);
     setAttendanceRecords(newRecords);
 
     try {
-      await markAttendance(timetableId, formattedDate, status);
+      // 2. Save the new status to the database.
+      await markAttendance(timetableId, formattedDate, newStatus);
+      
+      // 3. THIS IS THE FIX: Re-fetch all data from the database.
+      // This is the "single source of truth" and guarantees all cards will have the correct data.
+      await loadData();
+
     } catch (error) {
       console.error('Failed to mark attendance:', error);
+      // On failure, revert the button highlights to their original state.
       setAttendanceRecords(originalRecords);
     }
   };

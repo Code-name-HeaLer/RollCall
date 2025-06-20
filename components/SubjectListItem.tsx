@@ -43,7 +43,7 @@ export default function SubjectListItem({ subject, onPress }: SubjectListItemPro
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14 }}>
-            <Gauge size={60} strokeWidth={7} percent={attendance} gradientColors={attendanceColor} />
+          <Gauge size={60} strokeWidth={7} percent={attendance} color={attendanceColor} />
             <View style={{ marginLeft: 16, flex: 1 }}>
               <Text style={{ fontSize: 13, color: subtleText }}>
                 Target: {target}%

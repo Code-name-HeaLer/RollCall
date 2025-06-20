@@ -1,79 +1,72 @@
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Circle, G, Svg, Text as SvgText } from 'react-native-svg';
+import { Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 
 interface GaugeProps {
   size: number;
-  strokeWidth: number;
+  strokeWidth?: number; // Keep for compatibility but won't use
   percent: number | null;
   color: string;
 }
 
-export default function Gauge({ size, strokeWidth, percent, color }: GaugeProps) {
+export default function Gauge({ size, percent, color }: GaugeProps) {
   const { theme } = useTheme();
-  const trackColor = theme === 'dark' ? '#3F3F46' : '#E5E7EB'; // Darker track for better contrast
-
-  const radius = (size - strokeWidth) / 2;
-  const center = size / 2;
-  const circumference = 2 * Math.PI * radius;
-
-  // --- THIS IS THE KEY TO THE DASHED EFFECT ---
-  // A lower dash count creates more distinct, visible dashes.
-  const dashCount = 28; 
-  const dashLength = circumference / dashCount;
-  // A larger gap makes the dashes look more like distinct segments.
-  const gapLength = dashLength * 1.5; 
-  const strokeDasharray = `${dashLength} ${gapLength}`;
+  const trackColor = theme === 'dark' ? '#3F3F46' : '#E5E7EB';
 
   const percentage = percent === null ? 0 : Math.min(Math.max(percent, 0), 100);
-  
-  // Calculate the offset to show progress
-  const strokeDashoffset = circumference - (circumference * percentage) / 100;
+  const iconSize = size;
+  const fontSize = size / 5;
 
   return (
-    <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      {/* Rotate the entire gauge to start from the top */}
-      <G transform={`rotate(-90, ${center}, ${center})`}>
-        {/* 1. Background Track */}
-        <Circle
-          cx={center}
-          cy={center}
-          r={radius}
-          stroke={trackColor}
-          strokeWidth={strokeWidth}
-          strokeDasharray={strokeDasharray}
-          strokeLinecap="round" // Creates rounded ends for each dash
-          fill="none"
-        />
-
-        {/* 2. Progress Indicator */}
-        {percent !== null && (
-          <Circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke={color} // Progress color (green or red)
-            strokeWidth={strokeWidth}
-            strokeDasharray={strokeDasharray}
-            strokeDashoffset={strokeDashoffset}
-            strokeLinecap="round"
-            fill="none"
-          />
-        )}
-      </G>
-
-      {/* 3. Text in the Center */}
-      <SvgText
-        x={center}
-        y={center}
-        textAnchor="middle"
-        dy={size / 14} // Fine-tuned vertical alignment
-        fontSize={size / 4.5}
-        fontWeight="bold"
-        fill={percent === null ? trackColor : color}
-      >
+    <View style={{ 
+      width: size, 
+      height: size, 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      position: 'relative' 
+    }}>
+      {/* Background dashed circle */}
+      <Ionicons 
+        name="radio-button-off" 
+        size={iconSize} 
+        color={trackColor}
+        style={{ position: 'absolute' }}
+      />
+      
+      {/* Progress indicator */}
+      {percent !== null && percentage > 0 && (
+        <View style={{ 
+          position: 'absolute',
+          width: iconSize,
+          height: iconSize,
+          overflow: 'hidden',
+          transform: [{ rotate: '-90deg' }] // Start from top
+        }}>
+          <View style={{
+            width: iconSize,
+            height: iconSize * (percentage / 100),
+            overflow: 'hidden'
+          }}>
+            <Ionicons 
+              name="radio-button-off" 
+              size={iconSize} 
+              color={color}
+            />
+          </View>
+        </View>
+      )}
+      
+      {/* Center text */}
+      <Text style={{
+        fontSize: fontSize,
+        fontWeight: '600',
+        color: percent === null ? trackColor : color,
+        textAlign: 'center',
+        position: 'absolute'
+      }}>
         {percent === null ? 'N/A' : `${Math.round(percentage)}%`}
-      </SvgText>
-    </Svg>
+      </Text>
+    </View>
   );
 }
