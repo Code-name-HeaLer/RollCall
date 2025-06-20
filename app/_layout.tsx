@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { SettingsProvider } from '../context/SettingsContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import "../global.css";
 import { initializeDatabase } from '../lib/database';
 import { registerForPushNotificationsAsync } from '../lib/notifications';
 
