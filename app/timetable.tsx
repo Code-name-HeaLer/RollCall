@@ -6,8 +6,10 @@ import DayOfWeekPicker from '../components/DayOfWeekPicker';
 import StyledInput from '../components/StyledInput';
 import SubjectPicker from '../components/SubjectPicker';
 import TimeInput from '../components/TimeInput';
+import { useSettings } from '../context/SettingsContext';
 import { useTheme } from '../context/ThemeContext';
 import { deleteTimetableEntry, getAllSubjects, getFullTimetable, updateTimetableEntry, type FullTimetableEntry, type Subject } from '../lib/database';
+import { rescheduleAllNotifications } from '../lib/notifications';
 
 // Helper to convert day index to a string
 const dayOfWeekAsString = (dayIndex: number): string => {
@@ -62,6 +64,7 @@ const TimetableItem = ({ item, iconColor, onEdit }: { item: FullTimetableEntry, 
 };
 
 export default function TimetableScreen() {
+  const { classRemindersEnabled, taskRemindersEnabled } = useSettings();
   const [allEntries, setAllEntries] = useState<FullTimetableEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
@@ -134,6 +137,7 @@ export default function TimetableScreen() {
         endTime: editEndTime,
         location: editLocation.trim(),
       });
+      await rescheduleAllNotifications({ classReminders: classRemindersEnabled, taskReminders: taskRemindersEnabled });
       setEditModalVisible(false);
       // Refresh
       const allEntries = await getFullTimetable();
@@ -155,6 +159,7 @@ export default function TimetableScreen() {
           setEditLoading(true);
           try {
             await deleteTimetableEntry(editEntry.id);
+            await rescheduleAllNotifications({ classReminders: classRemindersEnabled, taskReminders: taskRemindersEnabled });
             setEditModalVisible(false);
             // Refresh
             const allEntries = await getFullTimetable();

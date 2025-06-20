@@ -71,14 +71,16 @@ export async function initializeDatabase() {
 );
 
     CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY NOT NULL,
-        subject_id INTEGER,
-        title TEXT NOT NULL,
-        description TEXT,
-        due_date TEXT NOT NULL,
-        is_completed INTEGER NOT NULL DEFAULT 0,
-        FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL
-    );
+    id INTEGER PRIMARY KEY NOT NULL,
+    subject_id INTEGER,
+    title TEXT NOT NULL,
+    description TEXT,
+    due_date TEXT NOT NULL,
+    is_completed INTEGER NOT NULL DEFAULT 0,
+    notification_id TEXT, -- The ID of the scheduled notification
+    FOREIGN KEY (subject_id) REFERENCES subjects (id) ON DELETE SET NULL
+  );
+
   `);
   // Migration: add teacher_name column if it doesn't exist
   try {

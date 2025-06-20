@@ -5,9 +5,13 @@ import DayOfWeekPicker from '../components/DayOfWeekPicker';
 import StyledInput from '../components/StyledInput';
 import SubjectPicker from '../components/SubjectPicker';
 import TimeInput from '../components/TimeInput';
+import { useSettings } from '../context/SettingsContext';
 import { addTimetableEntry, getAllSubjects, type Subject } from '../lib/database';
+import { rescheduleAllNotifications } from '../lib/notifications';
+
 
 export default function AddTimetableEntryModal() {
+  const { classRemindersEnabled, taskRemindersEnabled } = useSettings();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const [day, setDay] = useState(new Date().getDay()); // Default to today
@@ -44,6 +48,10 @@ export default function AddTimetableEntryModal() {
         startTime,
         endTime,
         location: location.trim(),
+      });
+      await rescheduleAllNotifications({ 
+        classReminders: classRemindersEnabled, 
+        taskReminders: taskRemindersEnabled 
       });
       router.back();
     } catch (error) {

@@ -3,10 +3,13 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, SectionList, Text, View } from 'react-native';
 import TaskListItem from '../../components/TaskListItem';
+import { useSettings } from '../../context/SettingsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { deleteTask, getAllTasks, toggleTaskCompletion, type TaskWithSubject } from '../../lib/database';
+import { rescheduleAllNotifications } from '../../lib/notifications';
 
 export default function TasksScreen() {
+  const { classRemindersEnabled, taskRemindersEnabled } = useSettings();
   const [tasks, setTasks] = useState<TaskWithSubject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { theme } = useTheme();
@@ -31,6 +34,7 @@ export default function TasksScreen() {
     setTasks(prevTasks => prevTasks.map(t => t.id === id ? { ...t, is_completed: currentStatus ? 1 : 0 } : t));
     try {
       await toggleTaskCompletion(id, currentStatus);
+      await rescheduleAllNotifications({ classReminders: classRemindersEnabled, taskReminders: taskRemindersEnabled });
     } catch (e) {
       setTasks(prevTasks => prevTasks.map(t => t.id === id ? { ...t, is_completed: !currentStatus ? 1 : 0 } : t));
       Alert.alert("Error", "Failed to update task status.");
@@ -42,7 +46,10 @@ export default function TasksScreen() {
       { text: "Cancel", style: "cancel" },
       { text: "Delete", style: "destructive", onPress: async () => {
         setTasks(prevTasks => prevTasks.filter(t => t.id !== id));
-        try { await deleteTask(id); } 
+        try { 
+          await deleteTask(id); 
+          await rescheduleAllNotifications({ classReminders: classRemindersEnabled, taskReminders: taskRemindersEnabled });
+        } 
         catch (e) { Alert.alert("Error", "Failed to delete task."); loadData(); }
       }}
     ]);

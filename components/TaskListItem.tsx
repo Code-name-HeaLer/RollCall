@@ -33,10 +33,7 @@ export default function TaskListItem({ task, onToggle, onDelete }: Props) {
     onDelete(task.id);
   }
 
-  const dueDateObject = task.due_date ? parseISO(task.due_date) : null;
-  const dueDateDisplay = dueDateObject && !isNaN(dueDateObject.getTime())
-    ? format(dueDateObject, 'MMM d')
-    : 'No due date';
+  const dueDateObject = parseISO(task.due_date);
 
   return (
     <View className="w-full flex-row items-center rounded-2xl bg-card dark:bg-dark-card p-4 mb-3 shadow-sm">
@@ -56,13 +53,11 @@ export default function TaskListItem({ task, onToggle, onDelete }: Props) {
           {task.title}
         </Text>
 
-        {/* --- THIS IS THE FIX --- */}
-        {/* Conditionally render the description if it exists */}
         {task.description ? (
           <Text
             style={{ color: subtleTextColor, textDecorationLine: textDecoration }}
             className="text-sm mt-1"
-            numberOfLines={3} // Limit to 3 lines to prevent huge cards
+            numberOfLines={3}
           >
             {task.description}
           </Text>
@@ -81,7 +76,7 @@ export default function TaskListItem({ task, onToggle, onDelete }: Props) {
             </View>
           )}
           <Text style={{ color: subtleTextColor }} className="text-sm">
-          Due: {dueDateDisplay}
+            Due: {format(dueDateObject, 'MMM d')}
           </Text>
         </View>
       </View>

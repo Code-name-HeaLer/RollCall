@@ -1,11 +1,5 @@
-import { Text, View } from "react-native";
-import "../global.css";
+import { Redirect } from "expo-router";
 
-
-export default function Home() {
-  return (
-    <View className="flex-1 items-center justify-center bg-red-100">
-      <Text className="text-blue-500 text-lg font-bold">Tailwind Test</Text>
-    </View>
-  );
+export default function Index() {
+  return <Redirect href="/home" />;
 }

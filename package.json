@@ -29,6 +29,7 @@
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.3.0",
     "expo-linking": "~7.1.5",
+    "expo-notifications": "~0.31.3",
     "expo-router": "~5.1.0",
     "expo-sharing": "~13.1.5",
     "expo-splash-screen": "~0.30.9",
@@ -36,6 +37,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-symbols": "~0.4.5",
     "expo-system-ui": "~5.0.9",
+    "expo-task-manager": "~13.1.5",
     "expo-web-browser": "~14.2.0",
     "nativewind": "^4.1.23",
     "react-dom": "19.0.0",
@@ -48,12 +50,12 @@
     "react-native-svg": "15.11.2",
     "react-native-tab-view": "^4.1.2",
     "react-native-web": "~0.20.0",
-    "react-native-webview": "13.13.5",
-    "undefined": "\\"
+    "react-native-webview": "13.13.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
     "@types/react-native-modern-datepicker": "^1.0.5",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",

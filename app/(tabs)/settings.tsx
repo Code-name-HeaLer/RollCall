@@ -6,11 +6,13 @@ import React from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import SettingsRow from '../../components/SettingsRow';
 import SettingsSection from '../../components/SettingsSection';
+import { useSettings } from '../../context/SettingsContext';
 import { useTheme } from '../../context/ThemeContext';
 import { generateCsv } from '../../lib/csv';
 import { getFullAttendanceHistoryForExport } from '../../lib/database';
 
 export default function SettingsScreen() {
+  const { classRemindersEnabled, taskRemindersEnabled, toggleClassReminders, toggleTaskReminders } = useSettings();
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
 
@@ -61,15 +63,23 @@ export default function SettingsScreen() {
         </SettingsSection>
 
         <SettingsSection title="Notifications">
-           <SettingsRow
-            icon="notifications-outline"
-            label="Class Reminders"
-            description="Get notified 15 minutes before a class"
-            type="switch"
-            value={false} // Placeholder
-            onValueChange={() => Alert.alert("Coming Soon", "This feature is under development.")}
-          />
-        </SettingsSection>
+        <SettingsRow
+          icon="calendar-outline"
+          label="Class Reminders"
+          description="Daily 7 AM summary for upcoming classes"
+          type="switch"
+          value={classRemindersEnabled}
+          onValueChange={toggleClassReminders}
+        />
+        <SettingsRow
+          icon="document-text-outline"
+          label="Task Deadline Reminders"
+          description="Get notified 1 day before a task is due"
+          type="switch"
+          value={taskRemindersEnabled}
+          onValueChange={toggleTaskReminders}
+        />
+      </SettingsSection>
         
         <SettingsSection title="Data Management">
           <SettingsRow

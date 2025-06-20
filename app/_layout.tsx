@@ -3,8 +3,10 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
+import { SettingsProvider } from '../context/SettingsContext';
 import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { initializeDatabase } from '../lib/database';
+import { registerForPushNotificationsAsync } from '../lib/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -12,7 +14,9 @@ SplashScreen.preventAutoHideAsync();
 export default function AppLayout() {
   return (
     <ThemeProvider>
-      <InitialLayout />
+      <SettingsProvider>
+        <InitialLayout />
+      </SettingsProvider>
     </ThemeProvider>
   );
 }
@@ -23,6 +27,10 @@ export default function AppLayout() {
  * This prevents the database from re-initializing and causing the NullPointerException.
  */
 function InitialLayout() {
+
+  useEffect(() => {
+    registerForPushNotificationsAsync();
+  }, []);
   const [fontsLoaded, fontError] = useFonts({
     // 'SpaceMono': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
