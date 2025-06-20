@@ -1,21 +1,33 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as SystemUI from 'expo-system-ui'; // <-- Import the powerful SystemUI API
 import { useEffect } from 'react';
-import { ThemeProvider } from '../context/ThemeContext';
-import '../global.css';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
 import { initializeDatabase } from '../lib/database';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-function RootLayout() {
+// This is the component that will be exported and wrapped by the ThemeProvider
+export default function AppLayout() {
+  return (
+    <ThemeProvider>
+      <InitialLayout />
+    </ThemeProvider>
+  );
+}
+
+/**
+ * This component's only job is one-time setup.
+ * It does NOT consume the theme, so it will not re-render on theme change.
+ * This prevents the database from re-initializing and causing the NullPointerException.
+ */
+function InitialLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    // If you have custom fonts, define them here. Example:
     // 'SpaceMono': require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  // Effect to initialize the database when the app starts
+  // Effect to initialize the database ONCE.
   useEffect(() => {
     initializeDatabase().catch(err => console.error("Database initialization failed", err));
   }, []);
@@ -27,25 +39,52 @@ function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  // If fonts are not loaded yet, return null to keep the splash screen visible
+  // If fonts are not loaded, return null to keep splash screen visible.
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
-  // This defines the main navigation structure.
-  return (
-    <Stack>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-    </Stack>
-  );
+  // Once setup is complete, render the main navigator component.
+  return <RootNavigator />;
 }
 
-// The component we actually export wraps our RootLayout with the ThemeProvider.
-// This is the correct place for it.
-export default function AppLayout() {
+/**
+ * This component's only job is to render the UI and respond to theme changes.
+ * It is safely rendered AFTER InitialLayout has completed its one-time setup.
+ */
+function RootNavigator() {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+
+  const colors = {
+    background: isDark ? '#0D0D0D' : '#F8F8F9',
+    text: isDark ? '#EAEAEA' : '#1F2937',
+    border: isDark ? '#262626' : '#E5E7EB',
+    primary: '#10B981' // Keep primary for tint color
+  };
+
+  // FIX FOR WHITE FLASH: This effect sets the app's root background color.
+  // This is more powerful than styling a navigator's content.
+  useEffect(() => {
+    SystemUI.setBackgroundColorAsync(colors.background);
+  }, [colors.background]);
+
   return (
-    <ThemeProvider>
-      <RootLayout />
-    </ThemeProvider>
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: { color: colors.text },
+        headerTintColor: colors.primary, // Use a consistent accent color for back buttons
+        contentStyle: { backgroundColor: colors.background },
+      }}>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen
+        name="add-subject"
+        options={{
+          presentation: 'modal',
+          title: 'Add New Subject',
+        }}
+      />
+    </Stack>
   );
 }
