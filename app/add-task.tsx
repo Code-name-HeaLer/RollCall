@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
@@ -62,8 +62,8 @@ export default function AddTaskModal() {
   };
 
   const onDayPress = (day: DateData) => {
-    // The library gives a date string, create a new Date object from it
-    setDueDate(new Date(day.dateString.replace(/-/g, '/')));
+    // Use parseISO for reliable date parsing
+    setDueDate(parseISO(day.dateString));
     setShowDatePicker(false);
   };
   
